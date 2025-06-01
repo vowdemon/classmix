@@ -1,0 +1,68 @@
+{
+  "name": "@vowdemon/classmix",
+  "version": "0.1.0",
+  "description": "A utility for managing CSS class names with variants and conditions",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --stub",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prepublishOnly": "npm run build",
+    "release": "npm run test && npm run build && npm publish"
+  },
+  "keywords": [
+    "css",
+    "classnames",
+    "tailwind",
+    "variants",
+    "slots",
+    "styling",
+    "components"
+  ],
+  "author": "vowdemon",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vowdemon/classmix"
+  },
+  "homepage": "https://github.com/vowdemon/classmix#readme",
+  "bugs": {
+    "url": "https://github.com/vowdemon/classmix/issues"
+  },
+  "packageManager": "pnpm@10.6.2",
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@typescript-eslint/eslint-plugin": "^8.32.1",
+    "@typescript-eslint/parser": "^8.32.1",
+    "@vitest/coverage-v8": "^3.1.4",
+    "eslint": "^9.27.0",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.8.3",
+    "unbuild": "^3.5.0",
+    "vitest": "^3.1.4"
+  },
+  "dependencies": {
+    "classcat": "^5.0.5"
+  },
+  "peerDependencies": {
+    "classcat": "^5.0.5"
+  },
+  "sideEffects": true
+}

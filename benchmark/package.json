@@ -1,0 +1,21 @@
+{
+  "name": "benchmark",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "benchmark": "^2.1.4",
+    "classcat": "^5.0.5",
+    "tailwind-merge": "^3.3.0",
+    "tailwind-variants": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/benchmark": "^2.1.5"
+  }
+}
