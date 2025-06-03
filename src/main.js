@@ -1,6 +1,7 @@
 import cc from "classcat";
 
 const mergeSlots = (childSlots, parentSlots) => {
+  if (!parentSlots) return childSlots;
   const result = { ...parentSlots };
   for (const slotName in childSlots) {
     const parentSlotValue = parentSlots[slotName];
@@ -17,10 +18,12 @@ const mergeSlots = (childSlots, parentSlots) => {
 };
 
 const mergeVariantsSlots = (childVariants, parentVariants) => {
-  const result = { ...parentVariants };
-  for (const slotName in childVariants) {
-    const parentSlotValue = parentVariants[slotName];
-    const childSlotValue = childVariants[slotName];
+  const result = Object.assign({}, parentVariants);
+
+  let slotName, parentSlotValue, childSlotValue;
+  for (slotName in childVariants) {
+    childSlotValue = childVariants[slotName];
+    parentSlotValue = parentVariants[slotName];
 
     if (!parentSlotValue) {
       result[slotName] = childSlotValue;
@@ -29,30 +32,48 @@ const mergeVariantsSlots = (childVariants, parentVariants) => {
 
     result[slotName] = mergeSlots(childSlotValue, parentSlotValue);
   }
+
   return result;
 };
 
 const initVariants = (variantsConfig, parentVariants) => {
-  const result = { ...parentVariants };
+  if (!parentVariants) {
+    const result = {};
+    for (const variantName in variantsConfig) {
+      const valuesConfig = variantsConfig[variantName];
+      const currentVariant = {};
+      for (const variantValue in valuesConfig) {
+        const classes = valuesConfig[variantValue];
+        currentVariant[variantValue] =
+          typeof classes === "object" ? classes : { base: classes };
+      }
+
+      result[variantName] = currentVariant;
+    }
+
+    return result;
+  }
+
+  const result = Object.assign({}, parentVariants);
 
   for (const variantName in variantsConfig) {
-    const currentVariant = {};
     const valuesConfig = variantsConfig[variantName];
+    const existingVariant = parentVariants[variantName];
 
-    for (const variantValue in valuesConfig) {
-      const classes = valuesConfig[variantValue];
-      currentVariant[variantValue] =
+    const currentVariant = {};
+    let key, classes;
+
+    for (key in valuesConfig) {
+      classes = valuesConfig[key];
+
+      currentVariant[key] =
         typeof classes === "object" ? classes : { base: classes };
     }
 
-    if (variantName in parentVariants) {
-      result[variantName] = mergeVariantsSlots(
-        currentVariant,
-        parentVariants[variantName]
-      );
-    } else {
-      result[variantName] = currentVariant;
-    }
+    result[variantName] =
+      existingVariant !== undefined
+        ? mergeVariantsSlots(currentVariant, existingVariant)
+        : currentVariant;
   }
 
   return result;
@@ -64,25 +85,23 @@ const applyVariantsClass = (variants, variantsCond, slot) => {
   for (const name in variants) {
     const variantConfig = variants[name];
     const variantKey = variantsCond[name];
+
     const variantValue =
       variantKey in variantConfig
         ? variantConfig[variantKey]
         : variantConfig["false"];
 
+    if (variantValue === undefined) continue;
+
     const slotClass = variantValue?.[slot];
-    if (slotClass) {
-      result.push(slotClass);
-    }
+
+    if (slotClass !== undefined) result.push(slotClass);
   }
 
   return result;
 };
 
-const isMatch = (compoundCond, variantsCond, slot) => {
-  if (typeof compoundCond.$when === "function") {
-    return compoundCond.$when(variantsCond, slot);
-  }
-
+const isMatch = (compoundCond, variantsCond) => {
   for (const variantName in compoundCond) {
     const conditionValues = compoundCond[variantName];
     let condValue = variantsCond[variantName];
@@ -104,28 +123,44 @@ const isMatch = (compoundCond, variantsCond, slot) => {
 };
 
 const applySpecificSharedClass = (sharedConfig, slot, variantsCond) => {
-  if (!sharedConfig) return undefined;
+  if (!sharedConfig.length) return undefined;
 
-  return sharedConfig.map((share) => {
-    if (share.slots != null && !share.slots.includes(slot)) {
-      return undefined;
-    } else {
-      if (typeof share.class === "function") {
-        return share.class(variantsCond, slot);
-      }
-      return share.class;
+  const result = [];
+
+  for (let i = 0; i < sharedConfig.length; i++) {
+    const share = sharedConfig[i];
+
+    if (share.slots && !share.slots.includes(slot)) {
+      continue;
     }
-  });
+
+    const classValue =
+      typeof share.class === "function"
+        ? share.class(variantsCond, slot)
+        : share.class;
+
+    if (classValue !== undefined) {
+      result.push(classValue);
+    }
+  }
+
+  return result;
 };
 
 const applyCompoundsClass = (compound, variantsCond, slot) => {
-  const {
-    class: classValue,
-    $share: sharedConfig,
-    ...compoundsCond
-  } = compound;
+  const classValue = compound.class,
+    $share = compound.$share,
+    $when = compound.$when;
 
-  const isMatched = isMatch(compoundsCond, variantsCond, slot);
+  const compoundsCond = {};
+  for (const key in compound) {
+    if (key === "class" || key === "$when" || key === "$share") continue;
+    compoundsCond[key] = compound[key];
+  }
+
+  const isMatched = $when
+    ? $when(variantsCond, slot)
+    : isMatch(compoundsCond, variantsCond);
 
   if (!isMatched) return undefined;
 
@@ -134,13 +169,12 @@ const applyCompoundsClass = (compound, variantsCond, slot) => {
     specificClass = specificClass(variantsCond, slot);
   }
 
-  const sharedClass = applySpecificSharedClass(
-    sharedConfig,
-    slot,
-    variantsCond
-  );
+  if ($share) {
+    const sharedClass = applySpecificSharedClass($share, slot, variantsCond);
+    return [specificClass, sharedClass];
+  }
 
-  return [specificClass, sharedClass];
+  return specificClass;
 };
 
 const normalizeConds = (conds) => {
@@ -177,19 +211,23 @@ const initCompounds = (compounds) => {
 
   for (let i = 0; i < compounds.length; i++) {
     const compound = compounds[i];
-    const {
-      class: classValue,
-      $when: $when,
-      $share: sharedConfig,
-      ...compoundsCond
-    } = compound;
+
+    const classValue = compound.class;
+    const $when = compound.$when;
+    const $share = compound.$share;
+
+    const compoundsCond = {};
+    for (const key in compound) {
+      if (key === "class" || key === "$when" || key === "$share") continue;
+      compoundsCond[key] = compound[key];
+    }
 
     normalizeConds(compoundsCond);
 
     result[i] = {
       $when,
       class: typeof classValue === "object" ? classValue : { base: classValue },
-      $share: sharedConfig ? initShareConfig(sharedConfig) : undefined,
+      $share: $share ? initShareConfig($share) : undefined,
       ...compoundsCond,
     };
   }
@@ -225,25 +263,27 @@ export const createClassmix = (wrapperFn) => {
       ? mergeSlots(slotsConfig, extendsConfig.slots)
       : slotsConfig;
 
-    const variants = initVariants(
-      originVariants,
-      extendsConfig?.variants ?? {}
-    );
+    const variants = initVariants(originVariants, extendsConfig?.variants);
     const currentCompounds = initCompounds(originCompounds);
 
     const compounds = extendsConfig.compounds
-      ? [...extendsConfig.compounds, ...currentCompounds]
+      ? [].concat(extendsConfig.compounds, currentCompounds)
       : currentCompounds;
 
     const variantsFn = (configA = {}) => {
-      const { class: classAorigin, ...variantsCondA } = configA;
+      const classAorigin = configA.class;
+      const variantsCondA = {};
+      for (const key in configA) {
+        if (key === "class") continue;
+        variantsCondA[key] = configA[key];
+      }
 
-      const classA = cc([classAorigin]);
+      const classA = classAorigin;
 
       const slotFnCache = new Map();
       const proxy = new Proxy(CLASSMIX_PROXY_FUNCTION, {
         apply: (target, thisArg, argArray) => {
-          return proxy.base(...argArray);
+          return proxy.base.apply(thisArg, argArray);
         },
         get(target, slot) {
           if (slotFnCache.has(slot)) {
@@ -251,7 +291,12 @@ export const createClassmix = (wrapperFn) => {
           }
 
           const fn = (configB = {}) => {
-            const { class: classBorigin, ...variantsCondB } = configB;
+            const classBorigin = configB.class;
+            const variantsCondB = {};
+            for (const key in configB) {
+              if (key === "class") continue;
+              variantsCondB[key] = configB[key];
+            }
 
             const classB = classBorigin;
             const variantsCond = {

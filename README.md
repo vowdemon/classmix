@@ -252,19 +252,19 @@ Comparison between Classmix and tailwind-variants using the same test scenarios:
 
 - Class Composition Performance Comparison (20 slots, 20 variants, 20 compound variants)
 
-| Test Scenario                  | tv (ops/sec)     | cx (ops/sec)   | Winner | Performance Advantage |
-| ------------------------------ | ---------------- | -------------- | ------ | --------------------- |
-| **Initialization**             | 1,545,506 ±1.95% | 573,265 ±2.00% | tv     | +169.60%              |
-| **Inheritance Initialization** | 227,905 ±1.90%   | 456,809 ±1.82% | cx     | +50.11%               |
-| **First Render**               | 35,206 ±2.07%    | 165,749 ±2.01% | cx     | +78.76%               |
-| **Repeated Render**            | 36,336 ±1.89%    | 253,774 ±2.46% | cx     | +85.68%               |
-| **Props Change**               | 30,912 ±2.00%    | 241,963 ±2.00% | cx     | +87.22%               |
-| **Component Lifecycle**        | 6,177 ±2.00%     | 40,552 ±1.96%  | cx     | +84.77%               |
-| **Compound Slots Render**      | 14,130 ±2.02%    | 120,077 ±1.94% | cx     | +88.23%               |
+| Test Scenario                  | tv (ops/sec)      | cx (ops/sec)   | Winner | Performance Advantage |
+| ------------------------------ | ----------------- | -------------- | ------ | --------------------- |
+| **Initialization**             | 1,243,029 ±2.18%  | 164,315 ±2.09% | tv     | +656.49%              |
+| **Inheritance Initialization** | 10,834,846 ±3.14% | 124,748 ±1.94% | tv     | +8585.38%             |
+| **First Render**               | 4,321 ±1.92%      | 117,482 ±2.47% | cx     | +96.32%               |
+| **Repeated Render**            | 4,327 ±1.86%      | 126,054 ±2.40% | cx     | +96.57%               |
+| **Props Change**               | 4,286 ±2.13%      | 110,917 ±2.23% | cx     | +96.14%               |
+| **Component Lifecycle**        | 891 ±1.88%        | 22,628 ±2.07%  | cx     | +96.06%               |
+| **Compound Slots Render**      | 2,110 ±2.15%      | 56,978 ±2.36%  | cx     | +96.30%               |
 
 > **Test Environment**:  
 > CPU: Intel Core i5-13400F  
-> Runtime: Bun 1.2.11  
+> Runtime: Node 24.0.1  
 > Units: ops/sec (higher is better)  
 > Stability: ±% shows standard deviation across runs.
 
